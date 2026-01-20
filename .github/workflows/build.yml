@@ -1,0 +1,58 @@
+name: Apnetso Betas
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install pyinstaller wxPython
+
+      # --------------------
+      # BUILD APP
+      # --------------------
+      - name: Build Apnetso
+        run: |
+          pyinstaller --windowed --name Apnetso apnetso.py
+
+      # --------------------
+      # macOS → PKG
+      # --------------------
+      - name: Create PKG (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          mkdir -p pkgroot/Applications
+          cp -R dist/Apnetso.app pkgroot/Applications/
+
+          pkgbuild \
+            --root pkgroot \
+            --identifier com.apnetso.app \
+            --version 1.0.0 \
+            Apnetso.pkg
+
+      # --------------------
+      # UPLOAD
+      # --------------------
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: apnetso-${{ matrix.os }}
+          path: |
+            dist/*
+            Apnetso.pkg
