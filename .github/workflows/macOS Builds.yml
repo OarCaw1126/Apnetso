@@ -1,48 +1,36 @@
 name: macOS Builds
 
-on:
-  push:
-    branches: [ "main" ]
-    tags:
-      - "v*"
+on: [push]
 
 jobs:
-  build-macos:
+  build:
     runs-on: macos-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      - name: Install dependencies
-        run: |
-          pip install pyinstaller wxPython
+      - name: Install deps
+        run: pip install pyinstaller wxPython
 
-      - name: Build .app
+      - name: Build .app with icon
         run: |
           pyinstaller \
             --windowed \
             --name Apnetso \
+            --icon docs/images/Apnetso.icns \
             apnetso.py
 
-      - name: Create .pkg
+      - name: Create PKG
         run: |
           mkdir -p pkgroot/Applications
           cp -R dist/Apnetso.app pkgroot/Applications/
+          pkgbuild --root pkgroot --identifier com.apnetso.app --version 1.0.0 Apnetso.pkg
 
-          pkgbuild \
-            --root pkgroot \
-            --identifier com.apnetso.app \
-            --version 1.0.0 \
-            Apnetso.pkg
-
-      - name: Upload PKG
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
-          name: Apnetso-macOS-pkg
+          name: Apnetso-macOS
           path: Apnetso.pkg
